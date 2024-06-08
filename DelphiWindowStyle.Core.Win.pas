@@ -1,0 +1,297 @@
+unit DelphiWindowStyle.Core.Win;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.DwmApi, Winapi.UxTheme, System.UITypes,
+  DelphiWindowStyle.Types;
+
+{$SCOPEDENUMS ON}
+{$ALIGN ON}
+{$MINENUMSIZE 4}
+{$WEAKPACKAGEUNIT}
+{$WARN SYMBOL_PLATFORM OFF}
+
+function SetSystemBackdropType(Handle: THandle; const Value: TSystemBackdropType): Boolean;
+
+function SetExtendFrameIntoClientArea(Handle: THandle; const Value: TRect): Boolean;
+
+function SetWindowCaptionColor(Handle: THandle; const Value: TColor): Boolean;
+
+function SetWindowTextColor(Handle: THandle; const Value: TColor): Boolean;
+
+function SetWindowBorderColor(Handle: THandle; const Value: TColor): Boolean;
+
+function SetWindowCorner(Handle: THandle; const Value: TWindowCornerPreference): Boolean;
+
+function SetWindowColorModeAsSystem(Handle: THandle): Boolean;
+
+function SetWindowColorMode(Handle: THandle; const IsDark: Boolean): Boolean;
+
+//
+
+procedure RefreshTitleBarThemeColor(Handle: THandle);
+
+function IsHighContrast: Boolean;
+
+function SystemIsDarkMode: Boolean;
+
+function IsDarkModeAllowedForWindow(Handle: THandle): Boolean;
+
+function GetIsImmersiveColorUsingHighContrast(Mode: TImmersiveHCCacheMode): Boolean;
+
+function ShouldAppsUseDarkMode: Boolean;
+
+//
+
+function ImmersiveDarkMode: TDwmWindowAttribute;
+
+function AllowDarkModeForWindow(Handle: THandle; Allow: Boolean): Boolean;
+
+procedure AllowDarkModeForApp(Allow: Boolean);
+
+implementation
+
+uses
+  System.Classes, System.SysUtils, System.Win.Registry;
+
+function SetSystemBackdropType(Handle: THandle; const Value: TSystemBackdropType): Boolean;
+begin
+  Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_SYSTEMBACKDROP_TYPE), @Value, SizeOf(Integer)));
+end;
+
+function SetExtendFrameIntoClientArea(Handle: THandle; const Value: TRect): Boolean;
+begin
+  var Margins: TMargins;
+  Margins.cxLeftWidth := Value.Left;
+  Margins.cxRightWidth := Value.Right;
+  Margins.cyTopHeight := Value.Top;
+  Margins.cyBottomHeight := Value.Bottom;
+  Result := Succeeded(DwmExtendFrameIntoClientArea(Handle, Margins));
+end;
+
+function SetWindowCaptionColor(Handle: THandle; const Value: TColor): Boolean;
+begin
+  Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_CAPTION_COLOR), @Value, SizeOf(TColorRef)));
+end;
+
+function SetWindowTextColor(Handle: THandle; const Value: TColor): Boolean;
+begin
+  Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_TEXT_COLOR), @Value, SizeOf(TColorRef)));
+end;
+
+function SetWindowBorderColor(Handle: THandle; const Value: TColor): Boolean;
+begin
+  Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_BORDER_COLOR), @Value, SizeOf(TColorRef)));
+end;
+
+function SetWindowCorner(Handle: THandle; const Value: TWindowCornerPreference): Boolean;
+begin
+  Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_WINDOW_CORNER_PREFERENCE), @Value, SizeOf(Integer)));
+end;
+
+function SetWindowColorModeAsSystem(Handle: THandle): Boolean;
+begin
+  Result := SetWindowColorMode(Handle, SystemIsDarkMode);
+end;
+
+function SetWindowColorMode(Handle: THandle; const IsDark: Boolean): Boolean;
+begin
+  var Value: LongBool := IsDark;
+  Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(ImmersiveDarkMode), @Value, SizeOf(Value)));
+  if Result then
+  begin
+    AllowDarkModeForWindow(Handle, IsDark);
+    AllowDarkModeForApp(IsDark);
+  end;
+end;
+
+function SystemIsDarkMode: Boolean;
+var
+  LRegistry: TRegistry;
+begin
+  Result := False;
+  try
+    LRegistry := TRegistry.Create;
+    try
+      LRegistry.RootKey := HKEY_CURRENT_USER;
+      if LRegistry.OpenKeyReadOnly('\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize') then
+        Result := not LRegistry.ReadBool('AppsUseLightTheme');
+    finally
+      LRegistry.Free;
+    end;
+  except
+    Result := False;
+  end;
+end;
+
+function IsHighContrast: Boolean;
+var
+  Info: HIGHCONTRASTW;
+begin
+  Info.cbSize := SizeOf(Info);
+  if SystemParametersInfo(SPI_GETHIGHCONTRAST, SizeOf(Info), @Info, Ord(False)) then
+    Result := Info.dwFlags and HCF_HIGHCONTRASTON <> 0
+  else
+    Result := False;
+end;
+
+//
+
+var
+  WinAllowDarkModeForApp: function(allow: BOOL): BOOL; stdcall;
+  WinAllowDarkModeForWindow: function(hWnd: HWND; allow: BOOL): BOOL; stdcall;
+  WinGetIsImmersiveColorUsingHighContrast: function(mode: TImmersiveHCCacheMode): BOOL; stdcall;
+  WinIsDarkModeAllowedForWindow: function(hWnd: HWND): BOOL; stdcall;
+  WinRefreshImmersiveColorPolicyState: procedure; stdcall;
+  WinSetPreferredAppMode: function(appMode: TPreferredAppMode): TPreferredAppMode; stdcall;
+  SetWindowCompositionAttribute: function(hWnd: HWND; pData: PWindowCompositionAttribData): BOOL; stdcall;
+  WinShouldAppsUseDarkMode: function: BOOL; stdcall;
+  GDarkModeSupported: BOOL = False; // changed type to BOOL
+  GDarkModeEnabled: BOOL = False;
+  GUxTheme: HMODULE = 0;
+
+const
+  LOAD_LIBRARY_SEARCH_SYSTEM32 = $00000800;
+
+const
+  themelib = 'uxtheme.dll';
+
+procedure RefreshTitleBarThemeColor(Handle: THandle);
+var
+  LUseDark: BOOL;
+  LData: TWindowCompositionAttribData;
+begin
+  if not Assigned(WinIsDarkModeAllowedForWindow) then
+    Exit;
+  if not Assigned(WinShouldAppsUseDarkMode) then
+    Exit;
+  LUseDark := WinIsDarkModeAllowedForWindow(Handle) and WinShouldAppsUseDarkMode and not IsHighContrast;
+  if TOSVersion.Build < 18362 then
+    SetProp(Handle, 'UseImmersiveDarkModeColors', THandle(LUseDark))
+  else if Assigned(SetWindowCompositionAttribute) then
+  begin
+    LData.Attrib := TWindowCompositionAttribute.WCA_USEDARKMODECOLORS;
+    LData.pvData := @LUseDark;
+    LData.cbData := SizeOf(LUseDark);
+    SetWindowCompositionAttribute(Handle, @LData);
+  end;
+end;
+
+function AllowDarkModeForWindow(Handle: THandle; Allow: Boolean): Boolean;
+begin
+  Result := GDarkModeSupported and WinAllowDarkModeForWindow(Handle, Allow);
+end;
+
+function IsDarkModeAllowedForWindow(Handle: THandle): Boolean;
+begin
+  Result := Assigned(WinIsDarkModeAllowedForWindow) and WinIsDarkModeAllowedForWindow(Handle);
+end;
+
+function GetIsImmersiveColorUsingHighContrast(Mode: TImmersiveHCCacheMode): Boolean;
+begin
+  Result := Assigned(WinGetIsImmersiveColorUsingHighContrast) and WinGetIsImmersiveColorUsingHighContrast(Mode);
+end;
+
+//
+
+procedure AllowDarkModeForApp(Allow: Boolean);
+begin
+  if Assigned(WinAllowDarkModeForApp) then
+    WinAllowDarkModeForApp(Allow)
+  else if Assigned(WinSetPreferredAppMode) then
+  begin
+    if Allow then
+      WinSetPreferredAppMode(TPreferredAppMode.AllowDarkMode)
+    else
+      WinSetPreferredAppMode(TPreferredAppMode.DefaultMode);
+  end;
+end;
+
+function ShouldAppsUseDarkMode: Boolean;
+begin
+  Result := Assigned(WinShouldAppsUseDarkMode) and WinShouldAppsUseDarkMode;
+end;
+
+function IsWindows10OrGreater(buildNumber: DWORD): Boolean;
+begin
+  Result := (TOSVersion.Major > 10) or
+    ((TOSVersion.Major = 10) and (TOSVersion.Minor = 0) and (DWORD(TOSVersion.Build) >= buildNumber));
+end;
+
+function IsWindows11OrGreater(buildNumber: DWORD): Boolean;
+begin
+  Result := IsWindows10OrGreater(22000) or IsWindows10OrGreater(buildNumber);
+end;
+
+function CheckBuildNumber(buildNumber: DWORD): Boolean;
+begin
+  Result :=                         //
+    IsWindows10OrGreater(20348) or  //
+    IsWindows10OrGreater(19045) or  //
+    IsWindows10OrGreater(19044) or  //
+    IsWindows10OrGreater(19043) or  //
+    IsWindows10OrGreater(19042) or  //
+    IsWindows10OrGreater(19041) or  // 2004
+    IsWindows10OrGreater(18363) or  // 1909
+    IsWindows10OrGreater(18362) or  // 1903
+    IsWindows10OrGreater(17763);    // 1809
+end;
+
+function ImmersiveDarkMode: TDwmWindowAttribute;
+begin
+  if IsWindows10OrGreater(18985) then
+    Result := TDwmWindowAttribute.DWMWA_USE_IMMERSIVE_DARK_MODE
+  else
+    Result := TDwmWindowAttribute.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1;
+end;
+
+procedure InitDarkMode;
+begin
+  if (TOSVersion.Major = 10) and (TOSVersion.Minor = 0) and CheckBuildNumber(TOSVersion.Build) then
+  begin
+    GUxTheme := LoadLibraryEx(themelib, 0, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if GUxTheme <> 0 then
+    begin
+      @WinAllowDarkModeForWindow := GetProcAddress(GUxTheme, MAKEINTRESOURCEA(133));
+      @WinGetIsImmersiveColorUsingHighContrast := GetProcAddress(GUxTheme, MAKEINTRESOURCEA(106));
+      @WinIsDarkModeAllowedForWindow := GetProcAddress(GUxTheme, MAKEINTRESOURCEA(137));
+      @WinRefreshImmersiveColorPolicyState := GetProcAddress(GUxTheme, MAKEINTRESOURCEA(104));
+      @SetWindowCompositionAttribute := GetProcAddress(GetModuleHandle(user32), 'SetWindowCompositionAttribute');
+      @WinShouldAppsUseDarkMode := GetProcAddress(GUxTheme, MAKEINTRESOURCEA(132));
+
+      if TOSVersion.Build < 18362 then
+        @WinAllowDarkModeForApp := GetProcAddress(GUxTheme, MAKEINTRESOURCEA(135))
+      else
+        @WinSetPreferredAppMode := GetProcAddress(GUxTheme, MAKEINTRESOURCEA(135));
+
+      if Assigned(WinRefreshImmersiveColorPolicyState) and
+        Assigned(WinShouldAppsUseDarkMode) and
+        Assigned(WinAllowDarkModeForWindow) and
+        (Assigned(WinAllowDarkModeForApp) or Assigned(WinSetPreferredAppMode)) and
+        Assigned(WinIsDarkModeAllowedForWindow)
+        then
+      begin
+        GDarkModeSupported := True;
+        AllowDarkModeForApp(True);
+        WinRefreshImmersiveColorPolicyState;
+        GDarkModeEnabled := ShouldAppsUseDarkMode and not IsHighContrast;
+      end;
+    end;
+  end;
+end;
+
+procedure DoneDarkMode;
+begin
+  if GUxTheme <> 0 then
+    FreeLibrary(GUxTheme);
+end;
+
+initialization
+  InitDarkMode;
+
+finalization
+  DoneDarkMode;
+
+end.
+
