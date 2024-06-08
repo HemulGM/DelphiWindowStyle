@@ -1,0 +1,86 @@
+object FormMain: TFormMain
+  Left = 0
+  Top = 0
+  Caption = 'Test'
+  ClientHeight = 436
+  ClientWidth = 764
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Panel27: TPanel
+    Align = Center
+    Size.Width = 465.000000000000000000
+    Size.Height = 88.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object ButtonAuto: TButton
+      Position.X = 8.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 83.000000000000000000
+      Size.Height = 32.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 7
+      Text = 'Auto'
+      TextSettings.Trimming = None
+      OnClick = ButtonAutoClick
+    end
+    object ButtonDisable: TButton
+      Position.X = 99.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 83.000000000000000000
+      Size.Height = 32.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 6
+      Text = 'Disable'
+      TextSettings.Trimming = None
+      OnClick = ButtonDisableClick
+    end
+    object ButtonMica: TButton
+      Position.X = 190.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 83.000000000000000000
+      Size.Height = 32.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 5
+      Text = 'Mica'
+      TextSettings.Trimming = None
+      OnClick = ButtonMicaClick
+    end
+    object ButtonAcrylic: TButton
+      Position.X = 281.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 83.000000000000000000
+      Size.Height = 32.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 4
+      Text = 'Acrylic'
+      TextSettings.Trimming = None
+      OnClick = ButtonAcrylicClick
+    end
+    object ButtonTabbed: TButton
+      Position.X = 372.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 83.000000000000000000
+      Size.Height = 32.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      Text = 'Tabbed'
+      TextSettings.Trimming = None
+      OnClick = ButtonTabbedClick
+    end
+    object CheckBoxDarkMode: TCheckBox
+      StyleName = 'text'
+      Position.X = 8.000000000000000000
+      Position.Y = 48.000000000000000000
+      Size.Width = 97.000000000000000000
+      Size.Height = 32.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 19
+      Text = 'DarkMode'
+      TextSettings.Trimming = Character
+      OnChange = CheckBoxDarkModeChange
+    end
+  end
+end
