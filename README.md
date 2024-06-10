@@ -1,6 +1,8 @@
 # FMXWindowStyle
  Window stylization for FMX and VCL
 
+ The ability to stylize the window and background with modern WinAPI (WinUI 3). Mica, Acrylic, MicaAlt
+
  ```pascal
   TFormHelper = class helper for TForm
     function SetSystemBackdropType(const Value: TSystemBackdropType): Boolean;
