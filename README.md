@@ -22,3 +22,39 @@
     function ShouldAppsUseDarkMode: Boolean;
   end;
 ```
+
+# Light
+
+## Auto
+
+![Preview](https://github.com/HemulGM/DelphiWindowStyle/blob/main/Media/2024-06-12%20(1).png?raw=true)
+
+## Mica
+
+![Preview](https://github.com/HemulGM/DelphiWindowStyle/blob/main/Media/2024-06-12%20(3).png?raw=true)
+
+## Acrilyc
+
+![Preview](https://github.com/HemulGM/DelphiWindowStyle/blob/main/Media/2024-06-12%20(4).png?raw=true)
+
+## Tabbed
+
+![Preview](https://github.com/HemulGM/DelphiWindowStyle/blob/main/Media/2024-06-12%20(5).png?raw=true)
+
+# Dark
+
+## Auto
+
+![Preview](https://github.com/HemulGM/DelphiWindowStyle/blob/main/Media/2024-06-12%20(9).png?raw=true)
+
+## Mica
+
+![Preview](https://github.com/HemulGM/DelphiWindowStyle/blob/main/Media/2024-06-12%20(8).png?raw=true)
+
+## Acrilyc
+
+![Preview](https://github.com/HemulGM/DelphiWindowStyle/blob/main/Media/2024-06-12%20(7).png?raw=true)
+
+## Tabbed
+
+![Preview](https://github.com/HemulGM/DelphiWindowStyle/blob/main/Media/2024-06-12%20(6).png?raw=true)
