@@ -12,7 +12,7 @@ type
 
   TImmersiveHCCacheMode = DelphiWindowStyle.Types.TImmersiveHCCacheMode;
 
-  TFormHelper = class helper for TForm
+  TFormHelper = class helper for TCustomForm
     function SetSystemBackdropType(const Value: TSystemBackdropType): Boolean;
     function SetExtendFrameIntoClientArea(const Value: TRect): Boolean;
     function SetWindowCaptionColor(const Value: TColor): Boolean;
@@ -22,12 +22,16 @@ type
     function SetWindowColorModeAsSystem: Boolean;
     function SetWindowColorMode(const IsDark: Boolean): Boolean;
     //
+    function SetAccentPolicy(GradientColor: TAlphaColor): Boolean;
+    //
     procedure RefreshTitleBarThemeColor;
     function IsHighContrast: Boolean;
     function SystemIsDarkMode: Boolean;
     function IsDarkModeAllowedForWindow: Boolean;
     function GetIsImmersiveColorUsingHighContrast(Mode: TImmersiveHCCacheMode): Boolean;
     function ShouldAppsUseDarkMode: Boolean;
+  public
+    procedure TestFuncs;
   end;
 
 implementation
@@ -73,6 +77,15 @@ begin
   DelphiWindowStyle.Core.Win.RefreshTitleBarThemeColor(FormToHWND(Self));
   {$ELSE}
   //
+  {$ENDIF}
+end;
+
+function TFormHelper.SetAccentPolicy(GradientColor: TAlphaColor): Boolean;
+begin
+  {$IFDEF MSWINDOWS}
+  Result := DelphiWindowStyle.Core.Win.SetAccentPolicy(FormToHWND(Self), GradientColor);
+  {$ELSE}
+  Result := False;
   {$ENDIF}
 end;
 
@@ -163,6 +176,16 @@ begin
   Result := DelphiWindowStyle.Core.Win.SystemIsDarkMode;
   {$ELSE}
   Result := False;
+  {$ENDIF}
+end;
+
+procedure TFormHelper.TestFuncs;
+begin
+  {$IFDEF MSWINDOWS}
+  //Result :=
+  DelphiWindowStyle.Core.Win.TestFuncs(FormToHWND(Self));
+  {$ELSE}
+  //Result := False;
   {$ENDIF}
 end;
 

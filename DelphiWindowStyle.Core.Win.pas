@@ -28,6 +28,8 @@ function SetWindowColorModeAsSystem(Handle: THandle): Boolean;
 
 function SetWindowColorMode(Handle: THandle; const IsDark: Boolean): Boolean;
 
+procedure TestFuncs(Handle: THandle);
+
 //
 
 procedure RefreshTitleBarThemeColor(Handle: THandle);
@@ -42,6 +44,8 @@ function GetIsImmersiveColorUsingHighContrast(Mode: TImmersiveHCCacheMode): Bool
 
 function ShouldAppsUseDarkMode: Boolean;
 
+function SetAccentPolicy(Handle: THandle; GradientColor: TAlphaColor): Boolean;
+
 //
 
 function ImmersiveDarkMode: TDwmWindowAttribute;
@@ -54,6 +58,74 @@ implementation
 
 uses
   System.Classes, System.SysUtils, System.Win.Registry;
+
+function SetAccentPolicy(Handle: THandle; GradientColor: TAlphaColor): Boolean;
+type
+  TAccentPolicy = packed record
+    AccentState: DWORD;
+    AccentFlags: DWORD;
+    GradientColor: DWORD;
+    AnimationId: DWORD;
+  end;
+
+  TWinCompAttrData = packed record
+    Attribute: THandle;
+    Data: Pointer;
+    DataSize: ULONG;
+  end;
+const
+  WCA_ACCENT_POLICY = 19;
+  ACCENT_ENABLE_GRADIENT = 1;
+  ACCENT_ENABLE_TRANSPARENTGRADIENT = 2;
+  ACCENT_ENABLE_BLURBEHIND = 3;
+  ACCENT_ENABLE_ACRYLICBLURBEHIND = 4;
+
+  DrawLeftBorder = $20;
+  DrawTopBorder = $40;
+  DrawRightBorder = $80;
+  DrawBottomBorder = $100;
+var
+  DWM: THandle;
+  CompAttrData: TWinCompAttrData;
+  Accent: TAccentPolicy;
+var
+  SetWindowCompositionAttribute: function(Wnd: HWND; const AttrData: TWinCompAttrData): BOOL; stdcall;
+begin
+  Result := False;
+
+  DWM := LoadLibrary('user32.dll');
+  try
+    @SetWindowCompositionAttribute := GetProcAddress(DWM, 'SetWindowCompositionAttribute');
+    if @SetWindowCompositionAttribute <> nil then
+    begin
+      if GradientColor <> TAlphaColorRec.Null then
+      begin
+        Accent.GradientColor := GradientColor;
+        Accent.AccentState := ACCENT_ENABLE_ACRYLICBLURBEHIND;
+      end
+      else
+      begin
+        Accent.AccentState := ACCENT_ENABLE_BLURBEHIND;
+      end;
+
+      Accent.AccentFlags := DrawLeftBorder or DrawTopBorder or DrawRightBorder or DrawBottomBorder;
+      CompAttrData.Attribute := WCA_ACCENT_POLICY;
+      CompAttrData.DataSize := SizeOf(Accent);
+      CompAttrData.Data := @Accent;
+      Result := SetWindowCompositionAttribute(Handle, CompAttrData);
+    end;
+  finally
+    FreeLibrary(DWM);
+  end;
+  SetWindowCorner(Handle, TWindowCornerPreference.DWMWCP_ROUND);
+end;
+
+procedure TestFuncs(Handle: THandle);
+begin
+  //EnableBlur(Handle);
+  //COLORREF dwColorBorder = MenuManager::g_bIsDarkMode ? WIN11_POPUP_BORDER_DARK : WIN11_POPUP_BORDER_LIGHT;
+  //DwmSetWindowAttribute(hWnd, DWMWA_BORDER_COLOR, &dwColorBorder, sizeof(COLORREF));
+end;
 
 function SetSystemBackdropType(Handle: THandle; const Value: TSystemBackdropType): Boolean;
 begin
