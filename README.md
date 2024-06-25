@@ -1,7 +1,9 @@
 # FMXWindowStyle
- Window stylization for FMX and VCL
+Window stylization for FMX and VCL
 
- The ability to stylize the window and background with modern WinAPI (WinUI 3). Mica, Acrylic, MicaAlt
+The ability to stylize the window and background with modern WinAPI (WinUI 3). Mica, Acrylic, MicaAlt
+
+You can control both the background of the application and the frame. Change the rounding of the window, add and change the color of the window stroke, change the color and text of the window header. You can also apply a dark mode without changing the window of the window of the window (only a dark frame)
 
  ```pascal
   TFormHelper = class helper for TForm
