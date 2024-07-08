@@ -30,6 +30,8 @@ function SetWindowColorMode(Handle: THandle; const IsDark: Boolean): Boolean;
 
 procedure TestFuncs(Handle: THandle);
 
+procedure AnimateWindow(Handle: THandle; Time: Cardinal; Animate: Cardinal);
+
 //
 
 procedure RefreshTitleBarThemeColor(Handle: THandle);
@@ -59,6 +61,11 @@ implementation
 uses
   System.Classes, System.SysUtils, System.Win.Registry;
 
+procedure AnimateWindow(Handle: THandle; Time: Cardinal; Animate: Cardinal);
+begin
+  Winapi.Windows.AnimateWindow(Handle, Time, Animate);
+end;
+
 function SetAccentPolicy(Handle: THandle; GradientColor: TAlphaColor): Boolean;
 type
   TAccentPolicy = packed record
@@ -79,7 +86,6 @@ const
   ACCENT_ENABLE_TRANSPARENTGRADIENT = 2;
   ACCENT_ENABLE_BLURBEHIND = 3;
   ACCENT_ENABLE_ACRYLICBLURBEHIND = 4;
-
   DrawLeftBorder = $20;
   DrawTopBorder = $40;
   DrawRightBorder = $80;
