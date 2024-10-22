@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.DwmApi, Winapi.UxTheme, System.UITypes,
-  DelphiWindowStyle.Types;
+  DelphiWindowStyle.Types, WinApi.UI.Composition;
 
 {$SCOPEDENUMS ON}
 {$ALIGN ON}
@@ -46,7 +46,7 @@ function GetIsImmersiveColorUsingHighContrast(Mode: TImmersiveHCCacheMode): Bool
 
 function ShouldAppsUseDarkMode: Boolean;
 
-function SetAccentPolicy(Handle: THandle; GradientColor: TAlphaColor): Boolean;
+function SetAccentPolicy(Handle: THandle; GradientColor: TColor): Boolean;
 
 //
 
@@ -66,7 +66,7 @@ begin
   Winapi.Windows.AnimateWindow(Handle, Time, Animate);
 end;
 
-function SetAccentPolicy(Handle: THandle; GradientColor: TAlphaColor): Boolean;
+function SetAccentPolicy(Handle: THandle; GradientColor: TColor): Boolean;
 type
   TAccentPolicy = packed record
     AccentState: DWORD;
@@ -82,10 +82,15 @@ type
   end;
 const
   WCA_ACCENT_POLICY = 19;
+  //
+  ACCENT_DISABLED = 0;
   ACCENT_ENABLE_GRADIENT = 1;
   ACCENT_ENABLE_TRANSPARENTGRADIENT = 2;
   ACCENT_ENABLE_BLURBEHIND = 3;
-  ACCENT_ENABLE_ACRYLICBLURBEHIND = 4;
+  ACCENT_ENABLE_ACRYLICBLURBEHIND = 4; // RS4 1803
+  ACCENT_ENABLE_HOSTBACKDROP = 5; // RS5 1809
+  ACCENT_INVALID_STATE = 6;
+  //
   DrawLeftBorder = $20;
   DrawTopBorder = $40;
   DrawRightBorder = $80;
@@ -104,7 +109,7 @@ begin
     @SetWindowCompositionAttribute := GetProcAddress(DWM, 'SetWindowCompositionAttribute');
     if @SetWindowCompositionAttribute <> nil then
     begin
-      if GradientColor <> TAlphaColorRec.Null then
+      if GradientColor <> TColorRec.Null then
       begin
         Accent.GradientColor := GradientColor;
         Accent.AccentState := ACCENT_ENABLE_ACRYLICBLURBEHIND;
@@ -128,9 +133,9 @@ end;
 
 procedure TestFuncs(Handle: THandle);
 begin
-  //EnableBlur(Handle);
-  //COLORREF dwColorBorder = MenuManager::g_bIsDarkMode ? WIN11_POPUP_BORDER_DARK : WIN11_POPUP_BORDER_LIGHT;
-  //DwmSetWindowAttribute(hWnd, DWMWA_BORDER_COLOR, &dwColorBorder, sizeof(COLORREF));
+  // EnableBlur(Handle);
+  // COLORREF dwColorBorder = MenuManager::g_bIsDarkMode ? WIN11_POPUP_BORDER_DARK : WIN11_POPUP_BORDER_LIGHT;
+  // DwmSetWindowAttribute(hWnd, DWMWA_BORDER_COLOR, &dwColorBorder, sizeof(COLORREF));
 end;
 
 function SetSystemBackdropType(Handle: THandle; const Value: TSystemBackdropType): Boolean;
@@ -150,7 +155,14 @@ end;
 
 function SetWindowCaptionColor(Handle: THandle; const Value: TColor): Boolean;
 begin
-  Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_CAPTION_COLOR), @Value, SizeOf(TColorRef)));
+  if Value = TColors.Null then
+  begin
+    var
+    DefVal := DWMWA_COLOR_DEFAULT;
+    Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_CAPTION_COLOR), @DefVal, SizeOf(DWMWA_COLOR_DEFAULT)))
+  end
+  else
+    Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_CAPTION_COLOR), @Value, SizeOf(TColorRef)));
 end;
 
 function SetWindowTextColor(Handle: THandle; const Value: TColor): Boolean;
@@ -217,13 +229,13 @@ end;
 //
 
 var
-  WinAllowDarkModeForApp: function(allow: BOOL): BOOL; stdcall;
-  WinAllowDarkModeForWindow: function(hWnd: HWND; allow: BOOL): BOOL; stdcall;
-  WinGetIsImmersiveColorUsingHighContrast: function(mode: TImmersiveHCCacheMode): BOOL; stdcall;
-  WinIsDarkModeAllowedForWindow: function(hWnd: HWND): BOOL; stdcall;
+  WinAllowDarkModeForApp: function(Allow: BOOL): BOOL; stdcall;
+  WinAllowDarkModeForWindow: function(HWND: HWND; Allow: BOOL): BOOL; stdcall;
+  WinGetIsImmersiveColorUsingHighContrast: function(Mode: TImmersiveHCCacheMode): BOOL; stdcall;
+  WinIsDarkModeAllowedForWindow: function(HWND: HWND): BOOL; stdcall;
   WinRefreshImmersiveColorPolicyState: procedure; stdcall;
   WinSetPreferredAppMode: function(appMode: TPreferredAppMode): TPreferredAppMode; stdcall;
-  SetWindowCompositionAttribute: function(hWnd: HWND; pData: PWindowCompositionAttribData): BOOL; stdcall;
+  SetWindowCompositionAttribute: function(HWND: HWND; pData: PWindowCompositionAttribData): BOOL; stdcall;
   WinShouldAppsUseDarkMode: function: BOOL; stdcall;
   GDarkModeSupported: BOOL = False; // changed type to BOOL
   GDarkModeEnabled: BOOL = False;
@@ -304,16 +316,16 @@ end;
 
 function CheckBuildNumber(buildNumber: DWORD): Boolean;
 begin
-  Result :=                         //
-    IsWindows10OrGreater(20348) or  //
-    IsWindows10OrGreater(19045) or  //
-    IsWindows10OrGreater(19044) or  //
-    IsWindows10OrGreater(19043) or  //
-    IsWindows10OrGreater(19042) or  //
-    IsWindows10OrGreater(19041) or  // 2004
-    IsWindows10OrGreater(18363) or  // 1909
-    IsWindows10OrGreater(18362) or  // 1903
-    IsWindows10OrGreater(17763);    // 1809
+  Result := //
+    IsWindows10OrGreater(20348) or //
+    IsWindows10OrGreater(19045) or //
+    IsWindows10OrGreater(19044) or //
+    IsWindows10OrGreater(19043) or //
+    IsWindows10OrGreater(19042) or //
+    IsWindows10OrGreater(19041) or // 2004
+    IsWindows10OrGreater(18363) or // 1909
+    IsWindows10OrGreater(18362) or // 1903
+    IsWindows10OrGreater(17763); // 1809
 end;
 
 function ImmersiveDarkMode: TDwmWindowAttribute;
@@ -348,7 +360,7 @@ begin
         Assigned(WinAllowDarkModeForWindow) and
         (Assigned(WinAllowDarkModeForApp) or Assigned(WinSetPreferredAppMode)) and
         Assigned(WinIsDarkModeAllowedForWindow)
-        then
+      then
       begin
         GDarkModeSupported := True;
         AllowDarkModeForApp(True);
@@ -366,10 +378,11 @@ begin
 end;
 
 initialization
-  InitDarkMode;
+
+InitDarkMode;
 
 finalization
-  DoneDarkMode;
+
+DoneDarkMode;
 
 end.
-
