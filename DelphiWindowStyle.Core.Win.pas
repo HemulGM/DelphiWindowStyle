@@ -56,10 +56,41 @@ function AllowDarkModeForWindow(Handle: THandle; Allow: Boolean): Boolean;
 
 procedure AllowDarkModeForApp(Allow: Boolean);
 
+function GetAdjustWindowRect(Handle: THandle): TRect;
+
 implementation
 
 uses
-  System.Classes, System.SysUtils, System.Win.Registry;
+  System.Types, System.Classes, Winapi.CommCtrl, Winapi.Messages,
+  System.SysUtils, System.Win.Registry;
+
+function CheckPerMonitorV2SupportForWindow(AHandle: HWnd): Boolean;
+begin
+  Result := (AHandle <> 0) and (TOSVersion.Major >= 10) and (TOSVersion.Build >= 14393) and
+    AreDpiAwarenessContextsEqual(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, GetWindowDpiAwarenessContext(AHandle));
+end;
+
+function AdjustWindowRectExForWindow(var lpRect: TRect; dwStyle: DWORD; bMenu: BOOL; dwExStyle: DWORD; AHandle: HWnd): Boolean;
+begin
+  if CheckPerMonitorV2SupportForWindow(AHandle) then
+    Result := AdjustWindowRectExForDpi(lpRect, dwStyle, bMenu, dwExStyle, GetDPIForWindow(AHandle))
+  else
+    Result := AdjustWindowRectEx(lpRect, dwStyle, bMenu, dwExStyle);
+end;
+
+function GetAdjustWindowRect(Handle: THandle): TRect;
+var
+  dwStyle, dwExStyle: DWORD;
+begin
+  Result := TRect.Empty;
+  dwStyle := GetWindowLong(Handle, GWL_STYLE);
+  dwExStyle := GetWindowLong(Handle, GWL_EXSTYLE);
+  {$IF CompilerVersion < 34}
+  AdjustWindowRectEx(Result, dwStyle, False, dwExStyle);
+  {$ELSE}
+  AdjustWindowRectExForWindow(Result, dwStyle, False, dwExStyle, Handle);
+  {$ENDIF}
+end;
 
 procedure AnimateWindow(Handle: THandle; Time: Cardinal; Animate: Cardinal);
 begin
@@ -100,7 +131,7 @@ var
   CompAttrData: TWinCompAttrData;
   Accent: TAccentPolicy;
 var
-  SetWindowCompositionAttribute: function(Wnd: HWND; const AttrData: TWinCompAttrData): BOOL; stdcall;
+  SetWindowCompositionAttribute: function(Wnd: hWnd; const AttrData: TWinCompAttrData): BOOL; stdcall;
 begin
   Result := False;
 
@@ -158,7 +189,7 @@ begin
   if Value = TColors.Null then
   begin
     var
-    DefVal := DWMWA_COLOR_DEFAULT;
+      DefVal := DWMWA_COLOR_DEFAULT;
     Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_CAPTION_COLOR), @DefVal, SizeOf(DWMWA_COLOR_DEFAULT)))
   end
   else
@@ -230,12 +261,12 @@ end;
 
 var
   WinAllowDarkModeForApp: function(Allow: BOOL): BOOL; stdcall;
-  WinAllowDarkModeForWindow: function(HWND: HWND; Allow: BOOL): BOOL; stdcall;
+  WinAllowDarkModeForWindow: function(hWnd: hWnd; Allow: BOOL): BOOL; stdcall;
   WinGetIsImmersiveColorUsingHighContrast: function(Mode: TImmersiveHCCacheMode): BOOL; stdcall;
-  WinIsDarkModeAllowedForWindow: function(HWND: HWND): BOOL; stdcall;
+  WinIsDarkModeAllowedForWindow: function(hWnd: hWnd): BOOL; stdcall;
   WinRefreshImmersiveColorPolicyState: procedure; stdcall;
   WinSetPreferredAppMode: function(appMode: TPreferredAppMode): TPreferredAppMode; stdcall;
-  SetWindowCompositionAttribute: function(HWND: HWND; pData: PWindowCompositionAttribData): BOOL; stdcall;
+  SetWindowCompositionAttribute: function(hWnd: hWnd; pData: PWindowCompositionAttribData): BOOL; stdcall;
   WinShouldAppsUseDarkMode: function: BOOL; stdcall;
   GDarkModeSupported: BOOL = False; // changed type to BOOL
   GDarkModeEnabled: BOOL = False;
@@ -360,7 +391,7 @@ begin
         Assigned(WinAllowDarkModeForWindow) and
         (Assigned(WinAllowDarkModeForApp) or Assigned(WinSetPreferredAppMode)) and
         Assigned(WinIsDarkModeAllowedForWindow)
-      then
+        then
       begin
         GDarkModeSupported := True;
         AllowDarkModeForApp(True);
@@ -378,11 +409,10 @@ begin
 end;
 
 initialization
-
-InitDarkMode;
+  InitDarkMode;
 
 finalization
-
-DoneDarkMode;
+  DoneDarkMode;
 
 end.
+

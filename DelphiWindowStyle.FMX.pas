@@ -47,6 +47,7 @@ type
     function IsDarkModeAllowedForWindow: Boolean;
     function GetIsImmersiveColorUsingHighContrast(Mode: TImmersiveHCCacheMode): Boolean;
     function ShouldAppsUseDarkMode: Boolean;
+    function GetAdjustWindowRect: TRect;
   public
     procedure TestFuncs;
   end;
@@ -65,6 +66,15 @@ procedure TFormHelper.AnimateWindow(Time: Cardinal; Animate: Cardinal);
 begin
   {$IFDEF MSWINDOWS}
   DelphiWindowStyle.Core.Win.AnimateWindow(FormToHWND(Self), Time, Animate);
+  {$ELSE}
+
+  {$ENDIF}
+end;
+
+function TFormHelper.GetAdjustWindowRect: TRect;
+begin
+  {$IFDEF MSWINDOWS}
+  Result := DelphiWindowStyle.Core.Win.GetAdjustWindowRect(FormToHWND(Self));
   {$ELSE}
 
   {$ENDIF}
