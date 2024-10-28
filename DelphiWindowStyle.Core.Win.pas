@@ -58,11 +58,35 @@ procedure AllowDarkModeForApp(Allow: Boolean);
 
 function GetAdjustWindowRect(Handle: THandle): TRect;
 
+function GetAeroColor: TAlphaColor;
+
 implementation
 
 uses
-  System.Types, System.Classes, Winapi.CommCtrl, Winapi.Messages,
+  System.Types, System.Math, System.Classes, Winapi.CommCtrl, Winapi.Messages,
   System.SysUtils, System.Win.Registry;
+
+function GetAeroColor: TAlphaColor;
+var
+  OpaqueBlend: Bool;
+  AColor: DWord;
+  //A, R, G, B: Integer;
+  OSInfo: TOSVersionInfo;
+begin
+  ZeroMemory(@OSInfo, SizeOf(OSInfo));
+  OSInfo.dwOSVersionInfoSize := SizeOf(TOSVERSIONINFO);
+  if (((not GetVersionEx(OSInfo)) and (OSInfo.dwPlatformId <> VER_PLATFORM_WIN32_NT) and (OSInfo.dwMajorVersion < 5))) or (Winapi.Dwmapi.DwmGetColorizationColor(AColor, OpaqueBlend) = S_FALSE) then
+  begin
+    Result := TColors.SysNone;
+    Exit;
+  end;             {
+  A := (AColor and $FF000000) shr 24;
+  R := (AColor and $00FF0000) shr 16;
+  G := (AColor and $0000FF00) shr 8;
+  B := (AColor and $000000FF);      }
+
+  Result := AColor;
+end;
 
 function CheckPerMonitorV2SupportForWindow(AHandle: HWnd): Boolean;
 begin

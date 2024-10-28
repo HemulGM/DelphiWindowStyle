@@ -48,6 +48,8 @@ type
     function GetIsImmersiveColorUsingHighContrast(Mode: TImmersiveHCCacheMode): Boolean;
     function ShouldAppsUseDarkMode: Boolean;
     function GetAdjustWindowRect: TRect;
+
+    function GetAeroColor: TAlphaColor;
   public
     procedure TestFuncs;
   end;
@@ -77,6 +79,15 @@ begin
   Result := DelphiWindowStyle.Core.Win.GetAdjustWindowRect(FormToHWND(Self));
   {$ELSE}
 
+  {$ENDIF}
+end;
+
+function TFormHelper.GetAeroColor: TAlphaColor;
+begin
+  {$IFDEF MSWINDOWS}
+  Result := DelphiWindowStyle.Core.Win.GetAeroColor;
+  {$ELSE}
+  Result := 0;
   {$ENDIF}
 end;
 
