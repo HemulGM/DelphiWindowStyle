@@ -33,7 +33,7 @@ type
     function SetWindowColorModeAsSystem: Boolean;
     function SetWindowColorMode(const IsDark: Boolean): Boolean;
     //
-    function SetAccentPolicy(GradientColor: TAlphaColor): Boolean;
+    function SetAccentPolicy(GradientColor: TColor): Boolean;
     procedure AnimateWindow(Time: Cardinal; Animate: Cardinal);
     //
     procedure WindowStyleExAdd(Value: NativeInt);
@@ -127,7 +127,7 @@ begin
   {$ENDIF}
 end;
 
-function TFormHelper.SetAccentPolicy(GradientColor: TAlphaColor): Boolean;
+function TFormHelper.SetAccentPolicy(GradientColor: TColor): Boolean;
 begin
   {$IFDEF MSWINDOWS}
   Result := DelphiWindowStyle.Core.Win.SetAccentPolicy(FormToHWND(Self), GradientColor);

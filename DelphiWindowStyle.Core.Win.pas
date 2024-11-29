@@ -183,7 +183,8 @@ begin
   finally
     FreeLibrary(DWM);
   end;
-  SetWindowCorner(Handle, TWindowCornerPreference.DWMWCP_ROUND);
+  if Result then
+    SetWindowCorner(Handle, TWindowCornerPreference.DWMWCP_ROUND);
 end;
 
 procedure TestFuncs(Handle: THandle);
