@@ -9,7 +9,6 @@ uses
 {$SCOPEDENUMS ON}
 {$ALIGN ON}
 {$MINENUMSIZE 4}
-{$WEAKPACKAGEUNIT}
 {$WARN SYMBOL_PLATFORM OFF}
 
 function SetSystemBackdropType(Handle: THandle; const Value: TSystemBackdropType): Boolean;
