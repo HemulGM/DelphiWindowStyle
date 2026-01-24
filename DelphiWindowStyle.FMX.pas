@@ -26,8 +26,11 @@ type
   TFormHelper = class helper for TCommonCustomForm
     function SetSystemBackdropType(const Value: TSystemBackdropType): Boolean;
     function SetExtendFrameIntoClientArea(const Value: TRect): Boolean;
+    // TColors.SysNone to default
     function SetWindowCaptionColor(const Value: TColor): Boolean;
+    // TColors.SysNone to default
     function SetWindowTextColor(const Value: TColor): Boolean;
+    // TColors.SysNone to default
     function SetWindowBorderColor(const Value: TColor): Boolean;
     function SetWindowCorner(const Value: TWindowCornerPreference): Boolean;
     function SetWindowColorModeAsSystem: Boolean;

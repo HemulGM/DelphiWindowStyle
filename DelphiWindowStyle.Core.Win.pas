@@ -210,14 +210,7 @@ end;
 
 function SetWindowCaptionColor(Handle: THandle; const Value: TColor): Boolean;
 begin
-  if Value = TColors.Null then
-  begin
-    var
-      DefVal := DWMWA_COLOR_DEFAULT;
-    Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_CAPTION_COLOR), @DefVal, SizeOf(DWMWA_COLOR_DEFAULT)))
-  end
-  else
-    Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_CAPTION_COLOR), @Value, SizeOf(TColorRef)));
+  Result := Succeeded(DwmSetWindowAttribute(Handle, Ord(TDwmWindowAttribute.DWMWA_CAPTION_COLOR), @Value, SizeOf(TColorRef)));
 end;
 
 function SetWindowTextColor(Handle: THandle; const Value: TColor): Boolean;

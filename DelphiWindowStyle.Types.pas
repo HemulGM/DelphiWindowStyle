@@ -2,7 +2,6 @@ unit DelphiWindowStyle.Types;
 
 {$ALIGN ON}
 {$MINENUMSIZE 4}
-{$WEAKPACKAGEUNIT}
 {$SCOPEDENUMS ON}
 {$WARN SYMBOL_PLATFORM OFF}
 
@@ -14,7 +13,7 @@ type
     DWMWA_NCRENDERING_POLICY,                         //
     DWMWA_TRANSITIONS_FORCEDISABLED,                  //
     DWMWA_ALLOW_NCPAINT,                              //
-    DWMWA_CAPTION_BUTTON_BOUNDS,                      //
+    DWMWA_CAPTION_BUTTON_BOUNDS,                      // avoid drawing app content under the caption buttons
     DWMWA_NONCLIENT_RTL_LAYOUT,                       //
     DWMWA_FORCE_ICONIC_REPRESENTATION,                //
     DWMWA_FLIP3D_POLICY,                              //
