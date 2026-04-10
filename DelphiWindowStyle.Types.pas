@@ -109,6 +109,7 @@ const
 
 const
   DWMWA_COLOR_DEFAULT = $FFFFFFFF;
+  DWMWA_COLOR_NONE = $FFFFFFFE;
 
 implementation
 

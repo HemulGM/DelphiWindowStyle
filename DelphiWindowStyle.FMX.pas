@@ -16,6 +16,7 @@ const
   AW_SLIDE = $00040000;        // Использует анимацию слайдов. По умолчанию используется анимация наката. Этот флаг игнорируется при использовании с AW_CENTER.
   AW_BLEND = $00080000;        // Использует эффект исчезания. Этот флаг можно использовать только в том случае, если hwnd является окном верхнего уровня.
 
+  DWMWA_COLOR_NONE = DelphiWindowStyle.Types.DWMWA_COLOR_NONE;
 type
   TSystemBackdropType = DelphiWindowStyle.Types.TSystemBackdropType;
 
