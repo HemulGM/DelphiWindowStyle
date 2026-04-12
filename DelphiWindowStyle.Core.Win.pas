@@ -121,44 +121,24 @@ begin
 end;
 
 function SetAccentPolicy(Handle: THandle; GradientColor: TColor): Boolean;
-type
-  TAccentPolicy = packed record
-    AccentState: DWORD;
-    AccentFlags: DWORD;
-    GradientColor: DWORD;
-    AnimationId: DWORD;
-  end;
-
-  TWinCompAttrData = packed record
-    Attribute: THandle;
-    Data: Pointer;
-    DataSize: ULONG;
-  end;
 const
-  WCA_ACCENT_POLICY = 19;
   //
-  ACCENT_DISABLED = 0;
-  ACCENT_ENABLE_GRADIENT = 1;
-  ACCENT_ENABLE_TRANSPARENTGRADIENT = 2;
   ACCENT_ENABLE_BLURBEHIND = 3;
-  ACCENT_ENABLE_ACRYLICBLURBEHIND = 4; // RS4 1803
-  ACCENT_ENABLE_HOSTBACKDROP = 5; // RS5 1809
-  ACCENT_INVALID_STATE = 6;
+  ACCENT_ENABLE_ACRYLICBLURBEHIND = 4;
   //
   DrawLeftBorder = $20;
   DrawTopBorder = $40;
   DrawRightBorder = $80;
   DrawBottomBorder = $100;
 var
-  DWM: THandle;
-  CompAttrData: TWinCompAttrData;
+  CompAttrData: TWindowCompositionAttribData;
   Accent: TAccentPolicy;
 var
-  SetWindowCompositionAttribute: function(Wnd: hWnd; const AttrData: TWinCompAttrData): BOOL; stdcall;
+  SetWindowCompositionAttribute: function(Wnd: hWnd; const AttrData: TWindowCompositionAttribData): BOOL; stdcall;
 begin
   Result := False;
 
-  DWM := LoadLibrary('user32.dll');
+  var DWM := LoadLibrary('user32.dll');
   try
     @SetWindowCompositionAttribute := GetProcAddress(DWM, 'SetWindowCompositionAttribute');
     if @SetWindowCompositionAttribute <> nil then
@@ -174,9 +154,9 @@ begin
       end;
 
       Accent.AccentFlags := DrawLeftBorder or DrawTopBorder or DrawRightBorder or DrawBottomBorder;
-      CompAttrData.Attribute := WCA_ACCENT_POLICY;
-      CompAttrData.DataSize := SizeOf(Accent);
-      CompAttrData.Data := @Accent;
+      CompAttrData.Attrib := TWindowCompositionAttribute.WCA_ACCENT_POLICY;
+      CompAttrData.cbData := SizeOf(TAccentPolicy);
+      CompAttrData.pvData := @Accent;
       Result := SetWindowCompositionAttribute(Handle, CompAttrData);
     end;
   finally

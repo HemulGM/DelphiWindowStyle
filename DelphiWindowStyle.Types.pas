@@ -88,6 +88,13 @@ type
 
   PWindowCompositionAttribData = ^TWindowCompositionAttribData;
 
+  TAccentPolicy = packed record
+    AccentState: Cardinal;
+    AccentFlags: Cardinal;
+    GradientColor: Cardinal;
+    AnimationId: Cardinal;
+  end;
+
 type
   TSystemBackdropType = (       //
     DWMSBT_AUTO = 0,            // Auto
